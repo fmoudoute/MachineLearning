@@ -1,0 +1,114 @@
+---
+title: "MachineLearning"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+print(Sys.time())
+```
+
+## R Markdown
+
+```{r , echo=FALSE}
+library(caret)
+library(ggplot2)
+library(kernlab)
+library(e1071)
+library(rattle)
+library(RGtk2)
+library(rpart.plot)
+library(randomForest)
+library(ISLR)
+library(ggplot2)
+library(caret)
+library(gbm)
+library(MASS)
+```
+
+#PART1 - Preparing Data
+#Retrieving Data 
+```{r , echo=TRUE}
+
+setwd("/Users/Mood/Documents/Coursera/Machine Learning/")
+training <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+```
+
+#Cleaning data from unused columns 
+```{r , echo=TRUE}
+
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+
+trainData <- training[, -c(1:7)]
+testData <- testing[, -c(1:7)]
+```
+# Creation of the Training and Validation Dataset
+```{r , echo=TRUE}
+set.seed(5000)
+inTrain <- createDataPartition(trainData$classe, p = 0.7, list = FALSE)
+train <- trainData[inTrain, ]
+valid <- trainData[-inTrain, ]
+```
+# PART2 - Prediction
+# A - Classification tree method 
+#Change the k from 5 to 10 as you want)
+```{r , echo=TRUE}
+Path <- trainControl(method = "cv", number = 10)
+fit_rpart <- train(classe ~ ., data = train, method = "rpart", trControl = Path)
+print(fit_rpart, digits = 4)
+```
+
+#Doing the Prettier plot from rattle library (ClassTree)
+```{r , echo=TRUE}
+fancyRpartPlot(fit_rpart$finalModel)
+```
+#Now apply the model to the validation set (ClassTree)
+```{r , echo=TRUE}
+predict_rpart <- predict(fit_rpart, valid)
+
+conf_part <- confusionMatrix(valid$classe, predict_rpart)
+print(conf_part)
+```
+# Confirm accuracy (ClassTree)
+```{r , echo=FALSE}
+Accuracy_rpart <- conf_part$overall[1]
+print(Accuracy_rpart)
+SampleError_rpart <- paste("Sample Error = ",  1 - Accuracy_rpart)
+print(SampleError_rpart)
+```
+
+# PART2 - Prediction
+# B - Using the Random Forests
+```{r , echo=TRUE}
+fit_rf <- train(classe ~ ., data = train, method = "rf",
+                trControl = Path)
+print(fit_rpart, digits = 4)
+```
+#Now apply the model to the validation set (rf)
+```{r , echo=TRUE}
+predict_rf <- predict(fit_rf, valid)
+
+conf_rf <- confusionMatrix(valid$classe, predict_rf)
+print(conf_rf)
+```
+# Confirm accuracy (rf)
+```{r , echo=FALSE}
+Accuracy_rf <- conf_rf$overall[1]
+print(Accuracy_rf)
+SampleError_rf <- paste("Sample Error = ",  1 - Accuracy_rf)
+print(SampleError_rf)
+
+```
+# PART2 - Prediction using the most reliable method
+# C - Application to testing set
+```{r , echo=FALSE}
+Results <- predict(fit_rf, testData)
+print(Results)
+
+print(Sys.time())
+
+```
